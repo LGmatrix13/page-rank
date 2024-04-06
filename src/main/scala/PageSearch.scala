@@ -7,8 +7,14 @@ object PageSearch {
      * @param query  a list of search terms to be counted in those pages
      * @return       a list of the number of times any of the terms appeared in each page in the same order as given
      */
+        
+    private def termsContained(page: RankedWebPage, query: List[String]): Int = {
+        val words = page.text.split("\\s+")
+        (for word <- query yield words.count(_.equalsIgnoreCase(word))).sum
+    }
+    
     def count(pages: List[RankedWebPage], query: List[String]): List[Double] = {
-        List() // TODO: implement this method and remove this stub
+        for page <- pages yield termsContained(page, query)
     }
 
     /**
@@ -17,7 +23,8 @@ object PageSearch {
      * @return      a list of the term-frequency of the occurrences of those terms in each page in the same order given
      */
     def tf(pages: List[RankedWebPage], query: List[String]): List[Double] = {
-        List() // TODO: implement this method and remove this stub
+        val countResults = count(pages, query)
+        (for i <- 0 to countResults.length yield countResults(i) / pages(i).text.length).toList
     }
 
     /**
@@ -26,6 +33,7 @@ object PageSearch {
      * @return      a list of the TF-IDF score for each page in the same order given
      */
     def tfidf(pages: List[RankedWebPage], query: List[String]): List[Double] = {
-        List() // TODO: implement this method and remove this stub
+        val tfResults = tf(pages, query)
+        (for i <- 0 to tfResults.length yield tfResults(i) * pages.filter(page => page != pages(i)).map(page => termsContained(page, query)).sum).toList
     }
 }

@@ -4,7 +4,7 @@ ThisBuild / scalaVersion := "3.1.3"
 
 lazy val root = (project in file("."))
   .settings(
-    name := "homework0"
+    name := "page-rank"
   )
 
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.17" % Test
