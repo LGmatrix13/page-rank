@@ -13,11 +13,10 @@ import scala.util.Sorting
         println("=============================================================")
 
         // Load WebPage.id -> WebPage map to better handle graph
-        val pages: Map[String, WebPage] = mapWebPages(loadWebPages()) // completed for you
+        val mappedPages: Map[String, WebPage] = mapWebPages(loadWebPages()) // completed for you
 
         // TODO: Measure the importance of each page using one of the functions in PageRank
-        val rankedPages: List[RankedWebPage] = List() // call PageRank.???? here
-
+        val rankedPages: List[RankedWebPage] = PageRank.indegree(mappedPages).map(item => RankedWebPage(mappedPages(item._1), item._2)).toList
         // Get user input then perform search until ":quit" is entered
         var query: String = ""
         var terms: List[String] = List()
@@ -30,12 +29,13 @@ import scala.util.Sorting
             terms != List(":quit")
         } do {
           // TODO: Measure the textual match of each page to these terms using one of the functions in PageSearch
-          val searchedPages: List[SearchedWebPage] = List() // call PageSearch.???? here
+          val searchResult = PageSearch.count(rankedPages, terms)
+          val searchedPages: List[SearchedWebPage] = (for i <- searchResult.indices yield SearchedWebPage(rankedPages(i), searchResult(i))).toList
           // normalize the ranges for weight and textmatch on these pages
           val pageArray = SearchedWebPageNormalize.normalize(searchedPages).toArray
           // sort this array based on the chosen averaging scheme i.e.
           //    (ArithmeticOrdering || GeometricOrdering || HarmonicOrdering)
-          Sorting.quickSort(pageArray)(NameOrdering) // TODO: change this from name ordering to something else!!!
+          Sorting.quickSort(pageArray)(HarmonicOrdering) // TODO: change this from name ordering to something else!!!
           // Print the top ranked pages in descending order
           for p <- pageArray.reverse.slice(0, 10) do println(f"${p.name}%-15s  ${p.url}")
           // print a divider to make reading the results easier
