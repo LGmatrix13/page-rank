@@ -4,7 +4,6 @@ import scala.math.Ordered
 class WebPage(val id: String, val name: String, val url: String,
               val text: String, val links: List[String])
 
-
 // WebPage subclass added weight attribute
 class RankedWebPage(id: String, name: String, url: String, text: String, links: List[String], val weight: Double)
                     extends WebPage(id,name,url,text,links) {
