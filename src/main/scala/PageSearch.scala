@@ -32,13 +32,10 @@ object PageSearch {
      */
     def tfidf(pages: List[RankedWebPage], query: List[String]): List[Double] = {
         def idf(pages: List[RankedWebPage], query: List[String]): List[Double] = {
-            pages.par.map(page => {
-                val d = termsWithin(page, query)
-                if (d != 0) Math.log(pages.length.toDouble / d.toDouble) else 0
-            }).seq.toList
+            pages.par.map(page => Math.log(pages.length.toDouble / (termsWithin(page, query).toDouble + 1))).seq.toList
         }
         val tfResults = tf(pages, query)
         val idfResults = idf(pages, query)
-        tfResults.zipWithIndex.par.map { case (tfResult, index) => (tfResult * idfResults(index)) / pages(index).text.length }.seq.toList
+        tfResults.zipWithIndex.par.map { case (tfResult, index) => (tfResult * idfResults(index)) }.seq.toList
     }
 }

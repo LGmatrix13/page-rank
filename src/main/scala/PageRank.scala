@@ -29,11 +29,10 @@ object PageRank {
     def pagerank(pages: Map[String, WebPage]): Map[String, Double] = {
         // Simulate random walks using tail recursion
         def simulateRandomWalks(): Map[String, Double] = {
-            val randomPage = Random.shuffle(pages.keys).head
             val walks = 100
-            val results: List[String] = (0 to 10000).par.map(user => simulateRandomWalk(pages, randomPage, walks)).seq.toList
+            val results: List[String] = (0 to 10000).par.map(user => simulateRandomWalk(pages, Random.shuffle(pages.keys).head, walks)).seq.toList
             val numbers = results.groupBy(item => item).map(item => item._1 -> item._2.size)
-            for (pageId, weight) <- pages yield if results.contains(pageId) then (pageId -> (numbers(pageId) + 1).toDouble / (10000 + pages.size).toDouble) else (pageId -> (0.0 + 1) / (10000 + pages.size).toDouble)
+            for (pageId, weight) <- pages yield if results.contains(pageId) then (pageId -> (numbers(pageId) + 1).toDouble / (10000 + pages.size).toDouble) else (pageId -> 1 / (10000 + pages.size).toDouble)
         }
 
         // Simulate a single random walk using tail recursion
