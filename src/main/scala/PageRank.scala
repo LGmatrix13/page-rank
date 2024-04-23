@@ -1,6 +1,7 @@
 import scala.annotation.tailrec
 import scala.util.Random
 import scala.collection.parallel.CollectionConverters.*
+import scala.collection.parallel.ParMap
 
 object PageRank {
     /**
@@ -16,6 +17,7 @@ object PageRank {
      * @return A map of page.id to a weight that is a simple count of the number of pages linking to that page
      */
     def indegree(pages: Map[String, WebPage]): Map[String, Double] = {
+        // should we filter out id so it doesn't count itself?
         pages.map {
             case (pageId, page) => pageId -> pages.filter(_._2.id != pageId).values.count(_.links.contains(pageId)).toDouble
         }
@@ -25,42 +27,34 @@ object PageRank {
     import scala.util.Random
 
     def pagerank(pages: Map[String, WebPage]): Map[String, Double] = {
-        val dampingFactor = 0.85
-        val numSteps = 100
-        val numUsers = 10000
-
-        // Initialize page ranks
-        val initialPageRanks = pages.keys.map(_ -> (1.0 / pages.size)).toMap
-
         // Simulate random walks using tail recursion
-        @tailrec
-        def simulateRandomWalks(pageRanks: Map[String, Double], remainingSteps: Int): Map[String, Double] = {
-            if (remainingSteps <= 0) {
-                return pageRanks
-            }
-            val numUsers = 1000
-            val newPageRanks = (1 to numUsers).par.foldLeft(Map[String, Double]().withDefaultValue(0.0)) { (acc, _) =>
-                val randomPage = Random.shuffle(pages.keys).head
-                val finalPage = simulateRandomWalk(pages, pageRanks, randomPage, 100)
-                acc + (finalPage -> (acc(finalPage) + (1.0 / numUsers)))
-            }.map { case (page, rank) => page -> (rank / numUsers) }
-            // Normalize page ranks
-            val totalWalks = numUsers * numUsers
-            val normalizedPageRanks = newPageRanks.map(page => (page._2 + 1) / (totalWalks + pages.size))
-            simulateRandomWalks(newPageRanks, remainingSteps - 1)
+        def simulateRandomWalks(): Map[String, Double] = {
+            val randomPage = Random.shuffle(pages.keys).head
+            val walks = 100
+            val results: List[String] = (0 to 10000).par.map(user => simulateRandomWalk(pages, randomPage, walks)).seq.toList
+            val numbers = results.groupBy(item => item).map(item => item._1 -> item._2.size)
+            for (pageId, weight) <- pages yield if results.contains(pageId) then (pageId -> (numbers(pageId) + 1).toDouble / (10000 + pages.size).toDouble) else (pageId -> (0.0 + 1) / (10000 + pages.size).toDouble)
         }
 
         // Simulate a single random walk using tail recursion
         @tailrec
-        def simulateRandomWalk(pages: Map[String, WebPage], pageRanks: Map[String, Double], currentPage: String, remainingSteps: Int): String = {
-            if (remainingSteps <= 0 || !pages.contains(currentPage) || Random.nextDouble() > dampingFactor || pages(currentPage).links.isEmpty) {
-                return currentPage
+        def simulateRandomWalk(pages: Map[String, WebPage], currentPage: String, remainingSteps: Int): String = {
+            // is this the right base case?
+            if (remainingSteps <= 0) {
+                currentPage
+            } else if (pages(currentPage).links.isEmpty) {
+                val newPage = Random.shuffle(pages.keys).head
+                simulateRandomWalk(pages, newPage, remainingSteps - 1)
+            } else if (Random.nextDouble() <= .85) {
+                val nextPage = Random.shuffle(pages(currentPage).links).head
+                simulateRandomWalk(pages, nextPage, remainingSteps - 1)
+            } else {
+                val newPage = Random.shuffle(pages.keys).head
+                simulateRandomWalk(pages, newPage, remainingSteps - 1)
             }
-            val nextPage = Random.shuffle(pages(currentPage).links).head
-            simulateRandomWalk(pages, pageRanks, nextPage, remainingSteps - 1)
         }
 
         // Start the simulation
-        simulateRandomWalks(initialPageRanks, 100)
+        simulateRandomWalks()
     }
 }

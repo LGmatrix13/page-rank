@@ -12,7 +12,7 @@ object PageSearch {
     }
 
     def count(pages: List[RankedWebPage], query: List[String]): List[Double] = {
-        for page <- pages yield termsWithin(page, query)
+        pages.par.map(page => termsWithin(page, query).toDouble).seq.toList
     }
 
     /**
@@ -22,7 +22,7 @@ object PageSearch {
      */
     def tf(pages: List[RankedWebPage], query: List[String]): List[Double] = {
         val countResults = count(pages, query)
-        (for i <- 0 to countResults.length yield countResults(i) / pages(i).text.length).toList
+        countResults.zipWithIndex.par.map { case (countResult, index) => countResult / pages(index).text.length}.seq.toList
     }
 
     /**
@@ -32,13 +32,13 @@ object PageSearch {
      */
     def tfidf(pages: List[RankedWebPage], query: List[String]): List[Double] = {
         def idf(pages: List[RankedWebPage], query: List[String]): List[Double] = {
-            pages.map(page => {
+            pages.par.map(page => {
                 val d = termsWithin(page, query)
                 if (d != 0) Math.log(pages.length.toDouble / d.toDouble) else 0
-            })
+            }).seq.toList
         }
         val tfResults = tf(pages, query)
         val idfResults = idf(pages, query)
-        tfResults.zipWithIndex.map { case (tfResult, i) => tfResult * idfResults(i) }
+        tfResults.zipWithIndex.par.map { case (tfResult, index) => (tfResult * idfResults(index)) / pages(index).text.length }.seq.toList
     }
 }
